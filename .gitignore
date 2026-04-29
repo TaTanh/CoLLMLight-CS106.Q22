@@ -38,6 +38,8 @@ records_transfer/
 frontend/web/
 scripts/
 *.sh
-/*.txt
 *.pkl
 playground*
+
+#Data
+data/FinetuneData/
