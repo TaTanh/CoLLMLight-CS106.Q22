@@ -27,15 +27,15 @@ print('len data list', len(data_list))
 
 # Shuffle data_list randomly
 random.shuffle(data_list)
-if len(data_list) > 1000:
-    new_data_list = data_list[:1000]
-    remaining_data = data_list[1000:]
+if len(data_list) > 300:
+    new_data_list = data_list[:300]
+    remaining_data = data_list[300:]
     # Save the remaining part as env_rl_data.json
     with open(root_path + 'env_rl_data.json', 'w') as f:
         json.dump(remaining_data, f, indent=4)
     data_list = new_data_list
 else:
-    print("data_list length is less than 1000, no sampling will be performed.")
+    print("data_list length is less than 300, no sampling will be performed.")
 
 
 def extract_json(response):
