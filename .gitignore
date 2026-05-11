@@ -1,0 +1,45 @@
+# IDEs and Editors
+.idea/
+.vscode/
+
+# OS Generated Files
+.DS_Store/
+.DS_Store
+
+# Python cache and compiled files
+models/__pycache__/
+utils/__pycache__/
+*.pyc
+
+# Local environments and configuration
+venv/
+env/
+.venv/
+.env
+
+# Dependencies, Checkpoints, and Model weights
+model/
+llm_weights
+memory/
+
+# Logs, outputs, records, and metrics
+GPT_logs/
+errors/
+records/
+results/
+summary/
+wandb/
+logs_case_study/
+logs_transfer/
+records_case_study/
+records_transfer/
+
+# Scripts, frontend, and miscellaneous data
+frontend/web/
+scripts/
+*.sh
+*.pkl
+playground*
+
+#Data
+data/FinetuneData/
