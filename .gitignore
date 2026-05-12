@@ -36,7 +36,6 @@ records_transfer/
 
 # Scripts, frontend, and miscellaneous data
 frontend/web/
-scripts/
 *.sh
 *.pkl
 playground*
