@@ -1,0 +1,57 @@
+datasets:
+  train:
+    - synth
+  eval:
+    - synth
+    - jinan_3x4
+    - hangzhou_4x4
+
+disable_new_york: true
+
+action_space:
+  - ETWT
+  - NTST
+  - ELWL
+  - NLSL
+
+action_mapping:
+  ETWT: WT_ET
+  NTST: NT_ST
+  ELWL: WL_EL
+  NLSL: NL_SL
+
+history_window: 5
+rollout_horizon: 5
+
+complexity:
+  occupancy_threshold: 0.5
+  queue_threshold: 15
+  wait_threshold: 60.0
+
+teacher:
+  model_name_or_path: gpt-4o-mini
+  api_base: https://api.openai.com/v1
+  temperature: 0.1
+  max_retries: 3
+
+student:
+  model_15b: Qwen/Qwen2.5-1.5B-Instruct
+  model_3b: Qwen/Qwen2.5-3B-Instruct
+
+samples:
+  max_samples_rco_smoke: 10
+  max_samples_rco_default: 1000
+  max_samples_rco_full_lite: 3000
+  max_samples_pr_default: 300
+  max_samples_pr_full_lite: 552
+
+paths:
+  output_dir: data/FinetuneData/litepp
+  rco_raw: data/FinetuneData/litepp/litepp_rco_raw.jsonl
+  rco_rollout: data/FinetuneData/litepp/litepp_rco_rollout.jsonl
+  rco_teacher: data/FinetuneData/litepp/litepp_rco_teacher.jsonl
+  pr_train: data/FinetuneData/litepp/litepp_pr_train.jsonl
+  pr_val: data/FinetuneData/litepp/litepp_pr_val.jsonl
+  llamafactory_rco: data/FinetuneData/llamafactory_litepp_rco
+  llamafactory_pr: data/FinetuneData/llamafactory_litepp_pr
+  eval_output: outputs/litepp_eval_results.csv
