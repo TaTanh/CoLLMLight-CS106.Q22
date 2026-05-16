@@ -1,5 +1,13 @@
 from .config import DIC_AGENTS
-from .cityflow_env import CityFlowEnv
+
+# Optional CityFlow import (may not be available)
+try:
+    from .cityflow_env import CityFlowEnv
+    CITYFLOW_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    CITYFLOW_AVAILABLE = False
+    CityFlowEnv = None
+
 import time
 import os
 import copy

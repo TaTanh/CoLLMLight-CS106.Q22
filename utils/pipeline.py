@@ -9,16 +9,52 @@ import os
 import time
 from multiprocessing import Process
 import numpy as np
-import wandb
 import copy
 import pickle
-from utils.cityflow_env import CityFlowEnv
-from transformers import AutoTokenizer, pipeline
-from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer, create_reference_model
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer, DataCollatorForSeq2Seq
-from peft import LoraConfig, get_peft_model, PeftModel, prepare_model_for_int8_training
-from tqdm import tqdm
-import torch
+
+# Optional wandb import (for experiment tracking)
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    WANDB_AVAILABLE = False
+    wandb = None
+
+# Optional CityFlow import (may not be available)
+try:
+    from utils.cityflow_env import CityFlowEnv
+    CITYFLOW_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    CITYFLOW_AVAILABLE = False
+    CityFlowEnv = None
+
+# Optional ML framework imports (may require torch/transformers)
+try:
+    from transformers import AutoTokenizer, pipeline
+    from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer, create_reference_model
+    from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer, DataCollatorForSeq2Seq
+    from peft import LoraConfig, get_peft_model, PeftModel, prepare_model_for_int8_training
+    from tqdm import tqdm
+    import torch
+    ML_LIBS_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    ML_LIBS_AVAILABLE = False
+    AutoTokenizer = None
+    AutoModelForCausalLMWithValueHead = None
+    PPOConfig = None
+    PPOTrainer = None
+    create_reference_model = None
+    AutoModelForCausalLM = None
+    TrainingArguments = None
+    Trainer = None
+    DataCollatorForSeq2Seq = None
+    LoraConfig = None
+    get_peft_model = None
+    PeftModel = None
+    prepare_model_for_int8_training = None
+    tqdm = None
+    torch = None
+
 from copy import deepcopy
 import re
 import os

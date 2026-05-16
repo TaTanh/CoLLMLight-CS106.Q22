@@ -1,15 +1,45 @@
 from .config import DIC_AGENTS
 from .my_utils import merge, get_state, get_state_detail, eight_phase_list, dump_json
 from copy import deepcopy
-from .cityflow_env import CityFlowEnv
+
+# Optional CityFlow import (may not be available)
+try:
+    from .cityflow_env import CityFlowEnv
+    CITYFLOW_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    CITYFLOW_AVAILABLE = False
+    CityFlowEnv = None
+
 from .pipeline import path_check, copy_cityflow_file, copy_conf_file
 import os
 import time
 import numpy as np
-import wandb
-from tqdm import tqdm
 import datetime
 import threading
+
+# Optional tracking imports
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    WANDB_AVAILABLE = False
+    wandb = None
+
+try:
+    from tqdm import tqdm
+    TQDM_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    TQDM_AVAILABLE = False
+    # Create dummy tqdm that doesn't break code
+    class tqdm:
+        def __init__(self, iterable=None, *args, **kwargs):
+            self.iterable = iterable or []
+        def __iter__(self):
+            return iter(self.iterable)
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
 
 class OneLine:
 

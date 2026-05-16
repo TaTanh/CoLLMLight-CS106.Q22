@@ -1,44 +1,110 @@
-# IDEs and Editors
-.idea/
-.vscode/
+# ============================================================================
+# Python and Virtual Environments
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# OS Generated Files
-.DS_Store/
-.DS_Store
-
-# Python cache and compiled files
-models/__pycache__/
-utils/__pycache__/
-*.pyc
-
-# Local environments and configuration
+# Virtual environments
 venv/
 env/
+ENV/
+env.bak/
+venv.bak/
 .venv/
+
+# ============================================================================
+# IDEs and Editors
+# ============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store/
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# OS Generated Files
+# ============================================================================
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# ============================================================================
+# Environment and Configuration
+# ============================================================================
 .env
+.env.local
+.env.*.local
+config.local.yaml
 
-# Dependencies, Checkpoints, and Model weights
+# ============================================================================
+# Project-Specific: Generated Outputs and Logs
+# ============================================================================
+# Raw training data (generated)
+data/FinetuneData/
+data/*/
+
+# Model checkpoints and weights
 model/
-llm_weights
-memory/
+llm_weights/
+checkpoints/
+saved_models/
 
-# Logs, outputs, records, and metrics
+# Logs and records
+records/
+records_*/
+logs/
+logs_*/
 GPT_logs/
 errors/
-records/
 results/
 summary/
 wandb/
-logs_case_study/
-logs_transfer/
-records_case_study/
-records_transfer/
 
-# Scripts, frontend, and miscellaneous data
-frontend/web/
-*.sh
+# Temporary files
 *.pkl
-playground*
+*.pickle
+*.tmp
 
-#Data
-data/FinetuneData/
+# ============================================================================
+# Project-Specific: Playground and Testing
+# ============================================================================
+playground*
+test_output/
+
+# ============================================================================
+# ALLOW LIST (exceptions)
+# ============================================================================
+# Keep smoke test scripts
+!smoke_test_*.sh
+
+# Keep scripts folder (with __init__.py)
+!scripts/__init__.py
+
+# Keep config and template files
+!config/
+!data/README.md
