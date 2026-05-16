@@ -10,8 +10,15 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.config import dic_traffic_env_conf
-from utils.cityflow_env import CityFlowEnv
 from utils.utils import merge
+
+# Optional CityFlow import (may not be available)
+try:
+    from utils.cityflow_env import CityFlowEnv
+    CITYFLOW_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    CITYFLOW_AVAILABLE = False
+    CityFlowEnv = None
 
 def copy_cityflow_file(dic_path, dic_traffic_env_conf, path=None):
     if path is None:
@@ -28,7 +35,7 @@ def parse_args():
     parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--simulation_time", type=int, default=3600)
     parser.add_argument("--policy", type=str, default="random")
-    parser.add_argument("--output", type=str, default="data/FinetuneData/litepp/smoke_raw.jsonl")
+    parser.add_argument("--output", type=str, default="data/FinetuneData/litepp/litepp_rco_raw.jsonl")
     return parser.parse_args()
 
 def main():
@@ -238,7 +245,6 @@ def main():
                         "neighbor_observation": neighbor_obs,
                         "history": intersection_histories[inter.inter_id].copy(), # This has exactly 5 past states
                         "candidate_actions": action_space,
-                        "local_priority": ["WT_ET", "NT_ST", "WL_EL", "NL_SL"],
                         "replay": {
                             "seed": 42,
                             "policy": args.policy,

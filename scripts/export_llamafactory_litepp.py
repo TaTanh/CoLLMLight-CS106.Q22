@@ -4,8 +4,8 @@ import os
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", "--train", type=str, required=True, dest="input")
-    parser.add_argument("--output_dir", "--out_dir", type=str, required=True, dest="output_dir")
+    parser.add_argument("--input", "--train", type=str, default="data/FinetuneData/litepp/litepp_rco_teacher.jsonl", dest="input")
+    parser.add_argument("--output_dir", "--out_dir", type=str, default="data/FinetuneData/llamafactory_litepp_rco", dest="output_dir")
     parser.add_argument("--split_ratio", type=float, default=0.9)
     return parser.parse_args()
 

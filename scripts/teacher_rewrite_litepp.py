@@ -6,8 +6,8 @@ import time
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="config/collmlight_litepp.yaml")
-    parser.add_argument("--input", type=str, required=True)
-    parser.add_argument("--output", type=str, required=True)
+    parser.add_argument("--input", type=str, default="data/FinetuneData/litepp/litepp_rco_rollout.jsonl")
+    parser.add_argument("--output", type=str, default="data/FinetuneData/litepp/litepp_rco_teacher.jsonl")
     parser.add_argument("--model_name_or_path", type=str, default="gpt-4o-mini")
     parser.add_argument("--dry_run", action="store_true")
     parser.add_argument("--max_samples", type=int, default=-1)
@@ -19,7 +19,7 @@ def parse_args():
 def fallback_reasoning(sample):
     c_label = sample.get("complexity", {}).get("label", "NO")
     g_action = sample.get("pseudo_golden_action", "UNKNOWN")
-    return {
+    response = {
         "phase1": {
             "answer": c_label,
             "reason": "Traffic conditions show routine flow and manageable queues based on fallback evaluation."
@@ -31,6 +31,17 @@ def fallback_reasoning(sample):
             "answer": g_action
         }
     }
+
+    # Add signal_consequence_prediction for Complex cases
+    if c_label == "Complex":
+        response["phase2"]["signal_consequence_prediction"] = {
+            "ETWT": "Estimated queue change minimal.",
+            "NTST": "Estimated queue change minimal.",
+            "ELWL": "Estimated queue change minimal.",
+            "NLSL": "Estimated queue change minimal."
+        }
+
+    return response
 
 def repair_schema(parsed_schema, sample):
     repaired = False
@@ -66,6 +77,25 @@ def repair_schema(parsed_schema, sample):
         p2["signal_comparison"] = raw_response.get("signal_comparison", "Compared candidate phases against current backlog.")
         repaired = True
 
+    # Handle signal_consequence_prediction for Complex cases
+    if c_label == "Complex":
+        if "signal_consequence_prediction" not in p2:
+            p2["signal_consequence_prediction"] = {
+                "ETWT": "Estimated queue change minimal.",
+                "NTST": "Estimated queue change minimal.",
+                "ELWL": "Estimated queue change minimal.",
+                "NLSL": "Estimated queue change minimal."
+            }
+            repaired = True
+        elif not isinstance(p2.get("signal_consequence_prediction"), dict):
+            p2["signal_consequence_prediction"] = {
+                "ETWT": "Estimated queue change minimal.",
+                "NTST": "Estimated queue change minimal.",
+                "ELWL": "Estimated queue change minimal.",
+                "NLSL": "Estimated queue change minimal."
+            }
+            repaired = True
+
     # Force strict alignment
     p1["answer"] = c_label
     p2["answer"] = g_action
@@ -83,7 +113,11 @@ def repair_schema(parsed_schema, sample):
             "answer": p2["answer"]
         }
     }
-    
+
+    # Add signal_consequence_prediction for Complex cases only
+    if c_label == "Complex" and "signal_consequence_prediction" in p2:
+        final_schema["phase2"]["signal_consequence_prediction"] = p2["signal_consequence_prediction"]
+
     return final_schema, repaired, raw_response
 
 def main():
@@ -120,6 +154,7 @@ def main():
                 try:
                     sys_msg = "You are an expert traffic signal control agent."
                     
+                    c_label = sample.get("complexity", {}).get("label", "NO")
                     schema_req_content = (
                         "Provide a JSON response strictly matching this schema. Keep responses extremely concise and to the point:\n"
                         "{\n"
@@ -130,21 +165,20 @@ def main():
                         "  \"phase2\": {\n"
                         "    \"traffic_analysis\": \"<strictly max 2 sentences analyzing current local and neighbor observation>\",\n"
                         "    \"future_state_summary\": \"<strictly max 1 sentence summarizing expected rollout queue states>\",\n"
-                        "    \"signal_comparison\": \"<strictly max 1 sentence comparing candidate actions>\",\n"
-                        "    \"answer\": \"<best_action_str>\"\n"
-                        "  }\n"
-                        "}"
-                    ) if args.compact else (
-                        "Provide a JSON response strictly matching this schema:\n"
-                        "{\n"
-                        "  \"phase1\": {\n"
-                        "    \"answer\": \"<complexity_label>\",\n"
-                        "    \"reason\": \"<reasoning for complexity>\"\n"
-                        "  },\n"
-                        "  \"phase2\": {\n"
-                        "    \"traffic_analysis\": \"<analysis of current local and neighbor observation>\",\n"
-                        "    \"future_state_summary\": \"<summary of expected rollout queue states>\",\n"
-                        "    \"signal_comparison\": \"<comparison between candidate actions>\",\n"
+                        "    \"signal_comparison\": \"<strictly max 1 sentence comparing candidate actions>\""
+                    )
+                    if c_label == "Complex":
+                        schema_req_content += (
+                            ",\n"
+                            "    \"signal_consequence_prediction\": {\n"
+                            "      \"ETWT\": \"<queue prediction 1 sentence>\",\n"
+                            "      \"NTST\": \"<queue prediction 1 sentence>\",\n"
+                            "      \"ELWL\": \"<queue prediction 1 sentence>\",\n"
+                            "      \"NLSL\": \"<queue prediction 1 sentence>\"\n"
+                            "    }"
+                        )
+                    schema_req_content += (
+                        ",\n"
                         "    \"answer\": \"<best_action_str>\"\n"
                         "  }\n"
                         "}"

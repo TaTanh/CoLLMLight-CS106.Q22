@@ -1,7 +1,6 @@
 from .pipeline import Pipeline
 from .oneline import OneLine
 from . import config
-import wandb
 import copy
 import numpy as np
 import time
@@ -10,6 +9,14 @@ import re
 import json
 import shutil
 from itertools import zip_longest, permutations
+
+# Optional tracking imports
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    WANDB_AVAILABLE = False
+    wandb = None
 
 location_dict_short = {"North": "N", "South": "S", "East": "E", "West": "W"}
 location_direction_dict = ["NT", "NL", "ST", "SL", "ET", "EL", "WT", "WL"]

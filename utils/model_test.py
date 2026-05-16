@@ -1,6 +1,14 @@
 from .config import DIC_AGENTS
 from copy import deepcopy
-from .cityflow_env import CityFlowEnv
+
+# Optional CityFlow import (may not be available)
+try:
+    from .cityflow_env import CityFlowEnv
+    CITYFLOW_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    CITYFLOW_AVAILABLE = False
+    CityFlowEnv = None
+
 from .my_utils import get_state, get_state_detail, eight_phase_list
 import json
 import os

@@ -20,20 +20,25 @@ class ComplexityAnalyzer:
             return True
         return False
 
+    def is_critical_neighbor(self, neighbor_state):
+        """Check if a neighbor intersection is critical based on occupancy."""
+        occ = neighbor_state.get('occupancy_avg', 0.0)
+        return occ >= self.occ_thresh
+
     def compute_nc(self, observation):
         """
-        Compute congested lanes across local and neighboring intersections.
+        Compute number of critical NEIGHBORING lanes (not local).
+        nc = count of neighboring intersections with congestion.
         """
         nc = 0
-        local_lanes = observation.get("current_observation", {}).get("local_lanes", {})
-        for lane, state in local_lanes.items():
-            if self.is_critical_lane(state):
-                nc += 1
-                
-        # If neighbor observation supports it, we evaluate it as well.
-        # But for Lite++, local is typically the most direct measurement of congestion "score" 
-        # unless specifically instructed to include neighbors to sum nc
-        # Will just return local sum to adhere strictly to simple nc
+        neighbor_obs = observation.get("neighbor_observation", {})
+
+        # Count critical neighbors in both upstream and downstream
+        for direction in ["upstream", "downstream"]:
+            for inter_id, neighbor_state in neighbor_obs.get(direction, {}).items():
+                if self.is_critical_neighbor(neighbor_state):
+                    nc += 1
+
         return nc
 
     def classify_complexity(self, nc):

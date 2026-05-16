@@ -1,15 +1,34 @@
-from models.random_agent import RandomAgent
-from models.fixedtime_agent import FixedtimeAgent
-from models.maxpressure_agent import MaxPressureAgent
-from models.efficient_maxpressure_agent import EfficientMaxPressureAgent
-from models.mplight_agent import MPLightAgent
-from models.colight_agent import CoLightAgent
-from models.presslight_one import PressLightAgentOne
-from models.advanced_mplight_agent import AdvancedMPLightAgent
-from models.advanced_maxpressure_agent import AdvancedMaxPressureAgent
-from models.simple_dqn_one import SimpleDQNAgentOne
-from models.attendlight_agent import AttendLightAgent
-from models.chatgpt import (ChatGPTTLCS_Wait_Time_Forecast, ChatGPTTLCS_Commonsense)
+# Optional agent imports (may require torch/tensorflow)
+try:
+    from models.random_agent import RandomAgent
+    from models.fixedtime_agent import FixedtimeAgent
+    from models.maxpressure_agent import MaxPressureAgent
+    from models.efficient_maxpressure_agent import EfficientMaxPressureAgent
+    from models.mplight_agent import MPLightAgent
+    from models.colight_agent import CoLightAgent
+    from models.presslight_one import PressLightAgentOne
+    from models.advanced_mplight_agent import AdvancedMPLightAgent
+    from models.advanced_maxpressure_agent import AdvancedMaxPressureAgent
+    from models.simple_dqn_one import SimpleDQNAgentOne
+    from models.attendlight_agent import AttendLightAgent
+    from models.chatgpt import (ChatGPTTLCS_Wait_Time_Forecast, ChatGPTTLCS_Commonsense)
+    AGENTS_AVAILABLE = True
+except (ImportError, ModuleNotFoundError) as e:
+    # Agents not available (torch/tensorflow not installed)
+    AGENTS_AVAILABLE = False
+    RandomAgent = None
+    FixedtimeAgent = None
+    MaxPressureAgent = None
+    EfficientMaxPressureAgent = None
+    MPLightAgent = None
+    CoLightAgent = None
+    PressLightAgentOne = None
+    AdvancedMPLightAgent = None
+    AdvancedMaxPressureAgent = None
+    SimpleDQNAgentOne = None
+    AttendLightAgent = None
+    ChatGPTTLCS_Wait_Time_Forecast = None
+    ChatGPTTLCS_Commonsense = None
 
 DIC_AGENTS = {
     "Random": RandomAgent,

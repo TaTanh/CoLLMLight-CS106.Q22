@@ -1,9 +1,16 @@
 import numpy as np
 import json
 import copy
-import torch
 from copy import deepcopy
 import re
+
+# Optional torch import (may not be available)
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    TORCH_AVAILABLE = False
+    torch = None
 
 location_dict_short = {"North": "N", "South": "S", "East": "E", "West": "W"}
 location_direction_dict = ["NT", "NL", "ST", "SL", "ET", "EL", "WT", "WL"]
