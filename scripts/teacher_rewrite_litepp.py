@@ -155,6 +155,29 @@ def main():
                     sys_msg = "You are an expert traffic signal control agent."
                     
                     c_label = sample.get("complexity", {}).get("label", "NO")
+                    complexity_guidance = {
+                        "NO": (
+                            "The fixed complexity label is NO: explain that the signal choice can be made "
+                            "mostly from local traffic conditions without cooperative neighbor reasoning. "
+                            "Do not describe the case as Simple or Complex."
+                        ),
+                        "Simple": (
+                            "The fixed complexity label is Simple: explain that limited neighbor consideration "
+                            "is useful for one main interaction. Do not describe the case as Complex."
+                        ),
+                        "Complex": (
+                            "The fixed complexity label is Complex: explain that multiple neighbor interactions "
+                            "or spillback risks require deeper cooperative reasoning."
+                        )
+                    }.get(c_label, "Use the fixed complexity label exactly and keep the reason consistent with it.")
+
+                    observation_context = {
+                        "current_observation": sample.get("current_observation"),
+                        "neighbor_observation": sample.get("neighbor_observation"),
+                        "history": sample.get("history"),
+                        "candidate_actions": sample.get("candidate_actions")
+                    }
+
                     schema_req_content = (
                         "Provide a JSON response strictly matching this schema. Keep responses extremely concise and to the point:\n"
                         "{\n"
@@ -184,7 +207,12 @@ def main():
                         "}"
                     )
                     
-                    user_msg = f"Observation: {json.dumps(sample.get('current_observation'))}\nRollout Results: {json.dumps(sample.get('rollout_results'))}\n{schema_req_content}"
+                    user_msg = (
+                        f"Complexity Guidance: {complexity_guidance}\n"
+                        f"Observation Context: {json.dumps(observation_context)}\n"
+                        f"Rollout Results: {json.dumps(sample.get('rollout_results'))}\n"
+                        f"{schema_req_content}"
+                    )
                     
                     response = client.chat.completions.create(
                         model=args.model_name_or_path,
