@@ -34,20 +34,46 @@
    llamafactory-cli train config/llamafactory_rco_qwen1_5b.yaml
    ```
 
-7. **PR Dataset Refinement Construction (Calls Student endpoint)**
-   After deploying your trained student model to a local vLLM API (e.g. `localhost:8000/v1`), build the preference dataset:
+7. **Stage 3a — DPO Pair Generation (Calls Student endpoint)**
+   After deploying your SFT-trained student model to a local vLLM API, run the refinement loop to collect DPO pairs from wrong cases (10 iterations):
    ```bash
-   python scripts/build_refinement_litepp.py --input data/FinetuneData/llamafactory_litepp/train.json --output data/FinetuneData/litepp/pr_dataset.jsonl --endpoint http://localhost:8000/v1
+   python scripts/refinement_litepp.py \
+       --input      data/FinetuneData/litepp/litepp_rco_teacher.jsonl \
+       --endpoint   http://localhost:8000/v1 \
+       --model      student-sft-v1 \
+       --iterations 10 \
+       --output     data/FinetuneData/litepp/litepp_dpo_pairs.jsonl
    ```
 
-8. **Training PR Refinement through SFT**
-   Execute SFT directly using Kaggle or your local GPU across the PR configs constructed:
+   *Dry-run (no API needed):*
+
    ```bash
-   llamafactory-cli train config/llamafactory_pr_qwen1_5b.yaml
+   python scripts/refinement_litepp.py --dry_run \
+       --input  data/FinetuneData/litepp/litepp_rco_teacher.jsonl \
+       --output data/FinetuneData/litepp/litepp_dpo_pairs.jsonl
    ```
 
-9. **End-to-End CityFlow Evaluation (Calls Student endpoint)**
-   Run simulation loop connecting CityFlow and the trained model. *(Note: NewYork datasets are explicitly disallowed via choices constraint)*:
+8. **Stage 3b — DPO Export for LLaMA Factory**
+   Convert DPO pairs to LLaMA Factory format (ATR + RA pairs, train/val split):
    ```bash
-   python scripts/evaluate_litepp_student.py --dataset synth --endpoint http://localhost:8000/v1
+   python scripts/export_dpo_litepp.py \
+       --input      data/FinetuneData/litepp/litepp_dpo_pairs.jsonl \
+       --output_dir data/FinetuneData/llamafactory_litepp_dpo
    ```
+
+9. **DPO Training via LLaMA Factory**
+   ```bash
+   llamafactory-cli train config/llamafactory_dpo_qwen1_5b.yaml
+   ```
+
+10. **End-to-End CityFlow Evaluation (Calls Student endpoint)**
+    Run simulation loop connecting CityFlow and the trained model.
+    *(Note: NewYork datasets are explicitly disallowed via choices constraint)*:
+
+    ```bash
+    python scripts/evaluate_litepp_student.py \
+        --dataset  synth \
+        --endpoint http://localhost:8000/v1 \
+        --model    student-dpo-v1 \
+        --output   outputs/eval_synth_dpo.csv
+    ```

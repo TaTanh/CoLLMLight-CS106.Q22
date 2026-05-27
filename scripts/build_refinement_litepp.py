@@ -1,3 +1,12 @@
+"""
+DEPRECATED — Stage 3 refinement dataset builder.
+
+This script implements the old SFT-mismatch approach and is no longer correct.
+Use the new two-script pipeline instead:
+
+  python scripts/refinement_litepp.py   # Stage 3a: build DPO pairs (ATR+RA format)
+  python scripts/export_dpo_litepp.py   # Stage 3b: export to LLaMA Factory DPO format
+"""
 import argparse
 import os
 import json
@@ -22,6 +31,11 @@ def parse_args():
     return parser.parse_args()
 
 def main():
+    print("WARNING: build_refinement_litepp.py is deprecated.")
+    print("Use instead:")
+    print("  python scripts/refinement_litepp.py   # Stage 3a — DPO pair generation")
+    print("  python scripts/export_dpo_litepp.py   # Stage 3b — LLaMA Factory export")
+    print()
     args = parse_args()
     if args.help_only:
         print("Build refinement module for PR dataset generation.")

@@ -47,13 +47,26 @@ samples:
   max_samples_pr_default: 300
   max_samples_pr_full_lite: 552
 
+stage3:
+  num_iterations:     10        # refinement iterations on wrong cases
+  batch_size:         100
+  temperature_init:   0.1       # pass 0: deterministic
+  temperature_refine: 1.0       # pass 1+: sampling
+  min_wrong_samples:  10        # early stop threshold
+  used_atr_proxy_len: 200       # chars threshold for proxy used_atr flag
+  endpoint:           "http://localhost:8000/v1"
+  model_name:         "student"
+  output_dir:         "data/FinetuneData/llamafactory_litepp_dpo"
+
 paths:
   output_dir: data/FinetuneData/litepp
   rco_raw: data/FinetuneData/litepp/litepp_rco_raw.jsonl
   rco_rollout: data/FinetuneData/litepp/litepp_rco_rollout.jsonl
   rco_teacher: data/FinetuneData/litepp/litepp_rco_teacher.jsonl
+  dpo_pairs: data/FinetuneData/litepp/litepp_dpo_pairs.jsonl
   pr_train: data/FinetuneData/litepp/litepp_pr_train.jsonl
   pr_val: data/FinetuneData/litepp/litepp_pr_val.jsonl
   llamafactory_rco: data/FinetuneData/llamafactory_litepp_rco
   llamafactory_pr: data/FinetuneData/llamafactory_litepp_pr
+  llamafactory_dpo: data/FinetuneData/llamafactory_litepp_dpo
   eval_output: outputs/litepp_eval_results.csv

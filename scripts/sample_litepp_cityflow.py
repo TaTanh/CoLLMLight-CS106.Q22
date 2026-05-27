@@ -355,9 +355,11 @@ def main():
                 signal_rank = {act: 0.0 for act in action_space}
                 row = (j // num_col) + 1
                 col = (j % num_col) + 1
+                inter_id_str = f"intersection_{row}_{col}"
                 sample = {
+                    "sample_id": f"{args.dataset}_{inter_id_str}_t{i}",
                     "dataset": args.dataset,
-                    "intersection_id": f"intersection_{row}_{col}",
+                    "intersection_id": inter_id_str,
                     "timestep": i,
                     "current_phase": action_space[0],
                     "current_observation": {"local_lanes": local_obs},
@@ -438,10 +440,12 @@ def main():
                     for act, res in rollout_results.items()
                 }
 
+                ts = int(env.eng.get_current_time())
                 sample = {
+                    "sample_id": f"{args.dataset}_{inter_name}_t{ts}",
                     "dataset": args.dataset,
                     "intersection_id": inter_name,
-                    "timestep": env.eng.get_current_time(),
+                    "timestep": ts,
                     "current_phase": act_str,
                     "current_observation": {"local_lanes": local_obs},
                     "neighbor_observation": neighbor_obs,
