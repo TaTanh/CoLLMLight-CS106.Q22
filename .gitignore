@@ -68,9 +68,6 @@ config.local.yaml
 # ============================================================================
 # Project-Specific: Generated Outputs and Logs
 # ============================================================================
-# Raw training data (generated)
-data/FinetuneData/
-data/*/
 
 # Model checkpoints and weights
 model/
