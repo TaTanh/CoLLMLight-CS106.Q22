@@ -104,8 +104,8 @@ def maxpressure_action(local_obs, action_space):
 def evaluate_rollout_for_inter(env, intersection_name, action_idx, rollout_horizon):
     """
     Apply action_idx to all intersections, step rollout_horizon times,
-    accumulate queue and wait proxy for the target intersection only.
-    Matches the paper's 5-step lookahead reward: Q = inverse(queue_length).
+    accumulating queue across all steps for the target intersection only.
+    Matches paper default reward_type='avg_ql': sum(ql over each step).
     """
     num_inters = len(env.list_intersection)
     for inter in env.list_intersection:

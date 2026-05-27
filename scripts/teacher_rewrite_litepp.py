@@ -179,7 +179,7 @@ def build_ra_prompt(sample, atr_output, signal_priority):
         f"{atr_output}\n\n"
         "## Rollout Simulation Results (5-step lookahead)\n"
         f"{_format_rollout(rollout)}\n\n"
-        "## Local Signal Priority (ranked by lowest projected queue)\n"
+        "## Local Signal Priority (ranked by waiting time reduction)\n"
         f"{_format_priority(signal_priority, rollout, signal_rank)}\n\n"
         "Based on the above reasoning and simulation evidence, select the best "
         "signal phase. Respond with a JSON object matching this schema exactly "
@@ -316,9 +316,10 @@ def main():
             sample = json.loads(line)
 
             if args.dry_run or not has_openai or client is None:
-                sample["atr_output"]       = "(dry-run — no ATR call)"
-                sample["teacher_response"] = fallback_reasoning(sample)
-                sample["teacher_fallback"] = True
+                sample["atr_output"]             = "(dry-run — no ATR call)"
+                sample["teacher_response"]        = fallback_reasoning(sample)
+                sample["teacher_fallback"]        = True
+                sample["teacher_schema_repaired"] = False
                 fallback_count += 1
             else:
                 try:
@@ -379,9 +380,10 @@ def main():
 
                 except Exception as e:
                     print(f"[ERROR] sample {idx}: {e}")
-                    sample["atr_output"]       = f"(error: {e})"
-                    sample["teacher_response"] = fallback_reasoning(sample)
-                    sample["teacher_fallback"] = True
+                    sample["atr_output"]             = f"(error: {e})"
+                    sample["teacher_response"]        = fallback_reasoning(sample)
+                    sample["teacher_fallback"]        = True
+                    sample["teacher_schema_repaired"] = False
                     fallback_count += 1
 
             fout.write(json.dumps(sample) + "\n")

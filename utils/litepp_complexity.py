@@ -4,7 +4,7 @@ class ComplexityAnalyzer:
         thresholds: dict mapped from config
         e.g., {'occupancy_threshold': 0.5, 'queue_threshold': 15, 'wait_threshold': 60.0}
         """
-        self.occ_thresh = thresholds.get('occupancy_threshold', 0.5)
+        self.occ_thresh = thresholds.get('occupancy_threshold', 0.4)
         self.q_thresh = thresholds.get('queue_threshold', 15)
         self.w_thresh = thresholds.get('wait_threshold', 60.0)
 
