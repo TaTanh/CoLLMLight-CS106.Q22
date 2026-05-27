@@ -26,6 +26,8 @@ share/python-wheels/
 MANIFEST
 # claude folder ignore
 .claude/
+Frame/
+original/
 
 # Virtual environments
 venv/

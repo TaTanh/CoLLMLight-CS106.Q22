@@ -8,7 +8,8 @@ import numpy as np
 import sys
 from copy import deepcopy
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ROOT)
 
 from utils.config import dic_traffic_env_conf
 from utils.utils import merge
@@ -265,6 +266,8 @@ def main():
     history_window  = lite_config.get("history_window", 5)
     rollout_horizon = lite_config.get("rollout_horizon", 5)
     action_space    = lite_config.get("action_space", ["ETWT", "NTST", "ELWL", "NLSL"])
+    data_root       = os.path.join(PROJECT_ROOT,
+                                   lite_config.get("data_root", "data"))
 
     dic_traffic_env_conf_extra = {
         "NUM_AGENTS": num_intersections,
@@ -284,7 +287,7 @@ def main():
     }
     env_conf = merge(dic_traffic_env_conf, dic_traffic_env_conf_extra)
     dic_path = {
-        "PATH_TO_DATA": os.path.join("data", template, road_net),
+        "PATH_TO_DATA": os.path.join(data_root, template, road_net),
         "PATH_TO_WORK_DIRECTORY": work_dir,
     }
 
