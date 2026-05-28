@@ -389,6 +389,44 @@ def main():
         # Save state once for all per-intersection rollouts at this timestep
         state_snapshot = save_env_state(env) if has_snapshot else None
 
+        # -- Batch rollout for all intersections at this timestep -----------
+        all_rollout_results = {inter.inter_name: {} for inter in env.list_intersection}
+        if state_snapshot is not None:
+            for a_idx, action_str in enumerate(action_space):
+                # Restore environment to snapshot state
+                load_env_state(env, state_snapshot)
+                
+                # Apply action_idx to all intersections
+                for inter in env.list_intersection:
+                    inter.set_signal(a_idx, "set", yellow_time=3,
+                                     path_to_log=env.path_to_work_directory)
+                
+                # Initialize accumulator for this action
+                temp_queues = {inter.inter_name: 0 for inter in env.list_intersection}
+                temp_waits = {inter.inter_name: 0.0 for inter in env.list_intersection}
+                
+                # Step the simulator rollout_horizon times
+                for _ in range(rollout_horizon):
+                    env.step([a_idx] * num_intersections)
+                    for inter in env.list_intersection:
+                        q_sum = sum(
+                            inter.dic_lane_waiting_vehicle_count_current_step.get(lane, 0)
+                            for lane in inter.list_entering_lanes
+                        )
+                        temp_queues[inter.inter_name] += q_sum
+                        temp_waits[inter.inter_name] += float(q_sum)
+                
+                # Store the results for this action
+                for inter in env.list_intersection:
+                    all_rollout_results[inter.inter_name][action_str] = {
+                        "queue_after_5": temp_queues[inter.inter_name],
+                        "wait_after_5": temp_waits[inter.inter_name],
+                        "future_state_summary": f"Queue goes to {temp_queues[inter.inter_name]}",
+                    }
+            
+            # Restore to snapshot after all 4 rollouts
+            load_env_state(env, state_snapshot)
+
         # -- Per-intersection: inline rollout + sample collection -----------
         for j in range(num_intersections):
             if samples_collected >= args.num_samples:
@@ -409,20 +447,7 @@ def main():
             # Only collect samples once history window is full
             if len(intersection_histories[inter_id]) == history_window:
                 if state_snapshot is not None:
-                    # Inline rollout: try all 4 actions from state at t
-                    rollout_results = {}
-                    for a_idx, action_str in enumerate(action_space):
-                        load_env_state(env, state_snapshot)
-                        q5, w5 = evaluate_rollout_for_inter(
-                            env, inter_name, a_idx, rollout_horizon)
-                        rollout_results[action_str] = {
-                            "queue_after_5": q5,
-                            "wait_after_5":  w5,
-                            "future_state_summary": f"Queue goes to {q5}",
-                        }
-                    # Restore to t after all 4 rollouts
-                    load_env_state(env, state_snapshot)
-                    inter = env.list_intersection[j]  # fresh ref after restore
+                    rollout_results = all_rollout_results[inter_name]
                 else:
                     rollout_results = synthetic_rollout(local_obs, action_space)
 

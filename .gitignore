@@ -71,6 +71,7 @@ config.local.yaml
 
 # Model checkpoints and weights
 model/
+models/
 llm_weights/
 checkpoints/
 saved_models/
@@ -109,3 +110,6 @@ test_output/
 # Keep config and template files
 !config/
 !data/README.md
+data/
+qwen_lora_rco/
+FineTuneData/

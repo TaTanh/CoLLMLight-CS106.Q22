@@ -30,6 +30,7 @@ def parse_args():
     parser.add_argument("--simulation_time", type=int, default=3600)
     parser.add_argument("--output", type=str, default="outputs/litepp_eval_results.csv")
     parser.add_argument("--help_only", action="store_true")
+    parser.add_argument("--save_replay", action="store_true", default=True, help="Save simulation replay files")
     return parser.parse_args()
 
 
@@ -158,25 +159,25 @@ def build_ra_prompt(obs_ctx: dict, atr_text: str) -> str:
 
 
 def parse_cityflow_metrics(work_dir: str) -> dict:
-    """Parse vehicle_inter_*.csv logs to compute ATT and AWT."""
-    travel_times, wait_times = [], []
+    """Parse vehicle_inter_*.csv logs to compute ATT."""
+    travel_times = []
     for fname in os.listdir(work_dir):
         if fname.startswith("vehicle_inter") and fname.endswith(".csv"):
             with open(os.path.join(work_dir, fname), newline="") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     try:
-                        tt = float(row.get("travel_time", 0) or 0)
-                        wt = float(row.get("waiting_time", 0) or 0)
-                        if tt > 0:
-                            travel_times.append(tt)
-                        if wt > 0:
-                            wait_times.append(wt)
+                        enter_t = row.get("enter_time")
+                        leave_t = row.get("leave_time")
+                        if enter_t and leave_t and leave_t != "nan":
+                            tt = float(leave_t) - float(enter_t)
+                            if tt > 0:
+                                travel_times.append(tt)
                     except ValueError:
                         continue
     return {
         "ATT": round(sum(travel_times) / len(travel_times), 2) if travel_times else 0.0,
-        "AWT": round(sum(wait_times) / len(wait_times), 2) if wait_times else 0.0,
+        "AWT": 0.0,  # Will be set dynamically in main
         "n_vehicles": len(travel_times),
     }
 
@@ -213,7 +214,8 @@ def main():
     dic_conf_extra = {
         "NUM_AGENTS": num_inters, "NUM_INTERSECTIONS": num_inters,
         "NUM_ROW": num_row, "NUM_COL": num_col,
-        "TRAFFIC_FILE": traffic_file, "ROADNET_FILE": f"roadnet_{road_net}.json"
+        "TRAFFIC_FILE": traffic_file, "ROADNET_FILE": f"roadnet_{road_net}.json",
+        "SAVEREPLAY": args.save_replay
     }
     env_conf = merge(dic_traffic_env_conf, dic_conf_extra)
     dic_path = {
@@ -231,66 +233,135 @@ def main():
     action_space = lite_config.get("action_space", ["ETWT", "NTST", "ELWL", "NLSL"])
     curr_action = [0] * num_inters
 
+    waiting_times_all_steps = []
+    reasoning_logs = {}
+
     print(f"Starting CityFlow evaluation for {args.dataset} ({args.simulation_time}s)")
     try:
         for i in range(args.simulation_time):
             env.step(curr_action)
+            # Track vehicle waiting times at each step
+            step_waits = [env.waiting_vehicle_list[v]["time"] for v in env.waiting_vehicle_list]
+            if step_waits:
+                waiting_times_all_steps.append(np.mean(step_waits))
             if i % 30 == 0:
-                for j, inter in enumerate(env.list_intersection):
+                # 1. Build observation context and ATR prompts for all intersections
+                obs_ctxs = []
+                atr_prompts = []
+                for inter in env.list_intersection:
                     obs_ctx = build_observation_context(inter, env, action_space)
-                    atr_prompt = build_atr_prompt(obs_ctx)
+                    obs_ctxs.append(obs_ctx)
+                    atr_prompts.append(build_atr_prompt(obs_ctx))
 
-                    # ATR call (Call 1)
-                    try:
-                        atr_resp = requests.post(
-                            f"{args.endpoint}/chat/completions",
-                            json={
+                # 2. Make batch request for ATR
+                atr_texts = []
+                try:
+                    payload = {
+                        "max_tokens": 256,
+                        "requests": [
+                            {
                                 "model": args.model,
                                 "messages": [
                                     {"role": "system", "content": SYSTEM_PROMPT},
-                                    {"role": "user", "content": atr_prompt}
+                                    {"role": "user", "content": prompt}
                                 ],
-                                "temperature": 0.1,
-                            },
-                            timeout=15
-                        )
-                        atr_text = atr_resp.json()["choices"][0]["message"]["content"]
-                    except Exception as e:
-                        print(f"ATR error intersection {j} step {i}: {e}")
-                        atr_text = "Unable to analyse traffic at this time."
+                                "temperature": 0.1
+                            }
+                            for prompt in atr_prompts
+                        ]
+                    }
+                    resp = requests.post(f"{args.endpoint}/batch/chat/completions", json=payload, timeout=120)
+                    if resp.status_code == 200:
+                        batch_res = resp.json().get("responses", [])
+                        for res in batch_res:
+                            atr_texts.append(res["choices"][0]["message"]["content"])
+                    else:
+                        print(f"Batch ATR failed with status {resp.status_code}: {resp.text}")
+                        atr_texts = ["Unable to analyse traffic at this time."] * len(env.list_intersection)
+                except Exception as e:
+                    print(f"Batch ATR exception at step {i}: {e}")
+                    atr_texts = ["Unable to analyse traffic at this time."] * len(env.list_intersection)
 
-                    # RA call (Call 2)
-                    ra_prompt = build_ra_prompt(obs_ctx, atr_text)
-                    try:
-                        ra_resp = requests.post(
-                            f"{args.endpoint}/chat/completions",
-                            json={
+                # 3. Build RA prompts using ATR texts
+                ra_prompts = []
+                for obs_ctx, atr_text in zip(obs_ctxs, atr_texts):
+                    ra_prompts.append(build_ra_prompt(obs_ctx, atr_text))
+
+                # 4. Make batch request for RA
+                ra_responses = []
+                try:
+                    payload = {
+                        "max_tokens": 128,
+                        "requests": [
+                            {
                                 "model": args.model,
                                 "messages": [
                                     {"role": "system", "content": SYSTEM_PROMPT},
-                                    {"role": "user", "content": ra_prompt}
+                                    {"role": "user", "content": prompt}
                                 ],
                                 "temperature": 0.1,
                                 "response_format": {"type": "json_object"}
-                            },
-                            timeout=15
-                        )
-                        ra_content = ra_resp.json()["choices"][0]["message"]["content"]
-                        action_str = json.loads(ra_content).get("phase2", {}).get("answer", "UNKNOWN")
-                        if action_str in action_space:
-                            curr_action[j] = action_space.index(action_str)
-                        else:
+                            }
+                            for prompt in ra_prompts
+                        ]
+                    }
+                    resp = requests.post(f"{args.endpoint}/batch/chat/completions", json=payload, timeout=120)
+                    if resp.status_code == 200:
+                        batch_res = resp.json().get("responses", [])
+                        for j, res in enumerate(batch_res):
+                            ra_content = res["choices"][0]["message"]["content"]
+                            ra_responses.append(ra_content)
+                            try:
+                                action_str = json.loads(ra_content).get("phase2", {}).get("answer", "UNKNOWN")
+                                if action_str in action_space:
+                                    curr_action[j] = action_space.index(action_str)
+                                else:
+                                    curr_action[j] = np.random.randint(0, len(action_space))
+                            except Exception as e:
+                                curr_action[j] = np.random.randint(0, len(action_space))
+                    else:
+                        print(f"Batch RA failed with status {resp.status_code}: {resp.text}")
+                        for j in range(len(env.list_intersection)):
                             curr_action[j] = np.random.randint(0, len(action_space))
-                    except Exception as e:
-                        print(f"RA error intersection {j} step {i}: {e}")
+                            ra_responses.append("{}")
+                except Exception as e:
+                    print(f"Batch RA exception at step {i}: {e}")
+                    for j in range(len(env.list_intersection)):
                         curr_action[j] = np.random.randint(0, len(action_space))
+                        ra_responses.append("{}")
 
+                for j, inter in enumerate(env.list_intersection):
                     inter.set_signal(curr_action[j], "set", yellow_time=3, path_to_log=work_dir)
+
+                # Log LLM reasoning for this timestep
+                step_log = {}
+                for j, inter in enumerate(env.list_intersection):
+                    step_log[inter.inter_name] = {
+                        "atr_prompt": atr_prompts[j] if j < len(atr_prompts) else "",
+                        "atr_response": atr_texts[j] if j < len(atr_texts) else "",
+                        "ra_prompt": ra_prompts[j] if j < len(ra_prompts) else "",
+                        "ra_response": ra_responses[j] if j < len(ra_responses) else "{}"
+                    }
+                reasoning_logs[str(i)] = step_log
 
     except Exception as e:
         print(f"Simulation error: {e}")
 
+    # Dump vehicle travel time logs to CSV
+    env.batch_log_2()
+
+    # Save reasoning logs to JSON file
+    reasoning_log_file = os.path.join(work_dir, "reasoning_log.json")
+    try:
+        with open(reasoning_log_file, "w", encoding="utf-8") as f:
+            json.dump(reasoning_logs, f, indent=2, ensure_ascii=False)
+        print(f"Saved reasoning logs to {reasoning_log_file}")
+    except Exception as e:
+        print(f"Failed to write reasoning logs: {e}")
+
     metrics = parse_cityflow_metrics(work_dir)
+    # Calculate AWT dynamically from step-level tracked logs
+    metrics["AWT"] = round(np.mean(waiting_times_all_steps), 2) if waiting_times_all_steps else 0.0
     print(f"Results — ATT: {metrics['ATT']}s  AWT: {metrics['AWT']}s  Vehicles: {metrics['n_vehicles']}")
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)

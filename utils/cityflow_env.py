@@ -580,9 +580,9 @@ class CityFlowEnv:
             "roadnetFile": self.dic_traffic_env_conf["ROADNET_FILE"],
             "flowFile": self.dic_traffic_env_conf["TRAFFIC_FILE"],
             "rlTrafficLight": True,
-            "saveReplay": False,  # if "GPT" in self.dic_traffic_env_conf["MODEL_NAME"] or "llm" in self.dic_traffic_env_conf["MODEL_NAME"] else False,
-            "roadnetLogFile": f"./{self.dic_traffic_env_conf['ROADNET_FILE']}-{self.dic_traffic_env_conf['TRAFFIC_FILE']}-{self.dic_traffic_env_conf['MODEL_NAME']}-{len(self.dic_traffic_env_conf['PHASE'])}_Phases-roadnetLogFile.json",
-            "replayLogFile": f"./{self.dic_traffic_env_conf['ROADNET_FILE']}-{self.dic_traffic_env_conf['TRAFFIC_FILE']}-{self.dic_traffic_env_conf['MODEL_NAME']}-{len(self.dic_traffic_env_conf['PHASE'])}_Phases-replayLogFile.txt"
+            "saveReplay": self.dic_traffic_env_conf.get("SAVEREPLAY", False),
+            "roadnetLogFile": "roadnetLogFile.json",
+            "replayLogFile": "replayLogFile.txt"
         }
         # print(cityflow_config)
         with open(os.path.join(self.path_to_work_directory, "cityflow.config"), "w") as json_file:
@@ -647,7 +647,7 @@ class CityFlowEnv:
         return state
     
     def _get_all_intersection_neighbor_dict(self):
-        roadnet = load_json(f'./{self.dic_path["PATH_TO_DATA"]}/{self.dic_traffic_env_conf["ROADNET_FILE"]}')
+        roadnet = load_json(f'{self.dic_path["PATH_TO_DATA"]}/{self.dic_traffic_env_conf["ROADNET_FILE"]}')
         intersections_raw = roadnet["intersections"]
         roads_raw = roadnet["roads"]
         neighbor_dict = self._build_neighbor_dict(intersections_raw, roads_raw)
@@ -730,7 +730,7 @@ class CityFlowEnv:
 
 
     def create_intersection_dict(self):
-        roadnet = load_json(f'./{self.dic_path["PATH_TO_DATA"]}/{self.dic_traffic_env_conf["ROADNET_FILE"]}')
+        roadnet = load_json(f'{self.dic_path["PATH_TO_DATA"]}/{self.dic_traffic_env_conf["ROADNET_FILE"]}')
 
         intersections_raw = roadnet["intersections"]
         roads_raw = roadnet["roads"]

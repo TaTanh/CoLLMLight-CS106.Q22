@@ -26,9 +26,9 @@ history_window: 5
 rollout_horizon: 5
 
 complexity:
-  occupancy_threshold: 0.4
-  queue_threshold: 15
-  wait_threshold: 60.0
+  occupancy_threshold: 0.15
+  queue_threshold: 4
+  wait_threshold: 20.0
 
 teacher:
   model_name_or_path: gpt-4o-mini
