@@ -8,7 +8,7 @@ import numpy as np
 from collections import defaultdict
 import random
 
-LLM = GPT_model(model='gpt-4')
+LLM = GPT_model(model='gpt-4o')
 
 root_path = './data/FinetuneData/'
 init_file_path = root_path + 'SynTrain_sample_all.json'
