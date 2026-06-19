@@ -77,7 +77,7 @@ checkpoints/
 saved_models/
 
 # Logs and records
-records/
+# records/
 records_*/
 logs/
 logs_*/
@@ -99,17 +99,33 @@ playground*
 test_output/
 
 # ============================================================================
-# ALLOW LIST (exceptions)
+# ALLOW LIST (exceptions) & Git Rules for Submission
 # ============================================================================
-# Keep smoke test scripts
-!smoke_test_*.sh
-
-# Keep scripts folder (with __init__.py)
-!scripts/__init__.py
-
-# Keep config and template files
+# Keep config, script and source files
 !config/
-!data/README.md
-data/
-qwen_lora_rco/
-FineTuneData/
+!scripts/
+!utils/
+
+# Keep standard traffic datasets (needed to run simulations)
+!data/
+data/FinetuneData/
+data/NewYork/
+
+# Ignore all temporary/sample rollout runs, but KEEP the final eval runs for the Dashboard
+records/*
+!records/litepp_eval_jinan_3x4/
+!records/litepp_eval_hangzhou_4x4/
+
+# Keep the LoRA adapter model weights and configs (only ~37MB)
+!qwen_lora_rco/
+qwen_lora_rco/**/checkpoint-*/
+qwen_lora_rco/LLaMA-Factory/data/
+qwen_lora_rco/LLaMA-Factory/saves/Qwen2.5-1.5B-RCO-LoRA/checkpoint-*/
+
+# Ignore old/deprecated model folders and log files
+qwen_lora_rco_OLD/
+*.log
+
+# Keep outputs
+!outputs/
+!outputs/litepp_eval_results.csv

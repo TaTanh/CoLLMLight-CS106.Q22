@@ -905,6 +905,10 @@ class CityFlowEnv:
 
             # update queuing vehicle info
             vehicle_ids = self.eng.get_vehicles(include_waiting=False)
+            vehicle_ids_set = set(vehicle_ids)
+            for v_id in list(self.waiting_vehicle_list.keys()):
+                if v_id not in vehicle_ids_set:
+                    self.waiting_vehicle_list.pop(v_id)
             for v_id in vehicle_ids:
                 v_info = self.eng.get_vehicle_info(v_id)
                 speed = float(v_info["speed"])

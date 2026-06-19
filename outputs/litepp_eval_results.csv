@@ -1,4 +1,7 @@
 dataset,model,ATT,AWT,n_vehicles
-synth,student,0.0,0.0,0
-synth,student,0.0,0.0,0
-synth,student,237.45,1126.27,1471
+jinan_3x4,student,91.04,63.0,14234
+jinan_3x4,Fixedtime,1239.31,920.3,1786
+hangzhou_4x4,Fixedtime,1002.76,827.55,1526
+jinan_3x4,MaxPressure,273.2,38.25,4187
+hangzhou_4x4,MaxPressure,325.33,49.6,2751
+hangzhou_4x4,student,106.93,61.57,9987

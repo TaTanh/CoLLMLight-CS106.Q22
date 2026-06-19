@@ -336,8 +336,8 @@ def main():
         if env:
             env.step(action)
 
-        # Decision step: every 30s, after warm-up
-        if i <= 50 or i % 30 != 0:
+        # Decision step: every 10 iterations (~300s sim time), after warm-up
+        if i <= 20 or i % 10 != 0:
             continue
 
         # -- No CityFlow: emit synthetic samples and continue ---------------

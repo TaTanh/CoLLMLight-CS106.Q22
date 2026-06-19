@@ -244,105 +244,104 @@ def main():
             step_waits = [env.waiting_vehicle_list[v]["time"] for v in env.waiting_vehicle_list]
             if step_waits:
                 waiting_times_all_steps.append(np.mean(step_waits))
-            if i % 30 == 0:
-                # 1. Build observation context and ATR prompts for all intersections
-                obs_ctxs = []
-                atr_prompts = []
-                for inter in env.list_intersection:
-                    obs_ctx = build_observation_context(inter, env, action_space)
-                    obs_ctxs.append(obs_ctx)
-                    atr_prompts.append(build_atr_prompt(obs_ctx))
+            # 1. Build observation context and ATR prompts for all intersections
+            obs_ctxs = []
+            atr_prompts = []
+            for inter in env.list_intersection:
+                obs_ctx = build_observation_context(inter, env, action_space)
+                obs_ctxs.append(obs_ctx)
+                atr_prompts.append(build_atr_prompt(obs_ctx))
 
-                # 2. Make batch request for ATR
-                atr_texts = []
-                try:
-                    payload = {
-                        "max_tokens": 256,
-                        "requests": [
-                            {
-                                "model": args.model,
-                                "messages": [
-                                    {"role": "system", "content": SYSTEM_PROMPT},
-                                    {"role": "user", "content": prompt}
-                                ],
-                                "temperature": 0.1
-                            }
-                            for prompt in atr_prompts
-                        ]
-                    }
-                    resp = requests.post(f"{args.endpoint}/batch/chat/completions", json=payload, timeout=120)
-                    if resp.status_code == 200:
-                        batch_res = resp.json().get("responses", [])
-                        for res in batch_res:
-                            atr_texts.append(res["choices"][0]["message"]["content"])
-                    else:
-                        print(f"Batch ATR failed with status {resp.status_code}: {resp.text}")
-                        atr_texts = ["Unable to analyse traffic at this time."] * len(env.list_intersection)
-                except Exception as e:
-                    print(f"Batch ATR exception at step {i}: {e}")
+            # 2. Make batch request for ATR
+            atr_texts = []
+            try:
+                payload = {
+                    "max_tokens": 256,
+                    "requests": [
+                        {
+                            "model": args.model,
+                            "messages": [
+                                {"role": "system", "content": SYSTEM_PROMPT},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.1
+                        }
+                        for prompt in atr_prompts
+                    ]
+                }
+                resp = requests.post(f"{args.endpoint}/batch/chat/completions", json=payload, timeout=120)
+                if resp.status_code == 200:
+                    batch_res = resp.json().get("responses", [])
+                    for res in batch_res:
+                        atr_texts.append(res["choices"][0]["message"]["content"])
+                else:
+                    print(f"Batch ATR failed with status {resp.status_code}: {resp.text}")
                     atr_texts = ["Unable to analyse traffic at this time."] * len(env.list_intersection)
+            except Exception as e:
+                print(f"Batch ATR exception at step {i}: {e}")
+                atr_texts = ["Unable to analyse traffic at this time."] * len(env.list_intersection)
 
-                # 3. Build RA prompts using ATR texts
-                ra_prompts = []
-                for obs_ctx, atr_text in zip(obs_ctxs, atr_texts):
-                    ra_prompts.append(build_ra_prompt(obs_ctx, atr_text))
+            # 3. Build RA prompts using ATR texts
+            ra_prompts = []
+            for obs_ctx, atr_text in zip(obs_ctxs, atr_texts):
+                ra_prompts.append(build_ra_prompt(obs_ctx, atr_text))
 
-                # 4. Make batch request for RA
-                ra_responses = []
-                try:
-                    payload = {
-                        "max_tokens": 128,
-                        "requests": [
-                            {
-                                "model": args.model,
-                                "messages": [
-                                    {"role": "system", "content": SYSTEM_PROMPT},
-                                    {"role": "user", "content": prompt}
-                                ],
-                                "temperature": 0.1,
-                                "response_format": {"type": "json_object"}
-                            }
-                            for prompt in ra_prompts
-                        ]
-                    }
-                    resp = requests.post(f"{args.endpoint}/batch/chat/completions", json=payload, timeout=120)
-                    if resp.status_code == 200:
-                        batch_res = resp.json().get("responses", [])
-                        for j, res in enumerate(batch_res):
-                            ra_content = res["choices"][0]["message"]["content"]
-                            ra_responses.append(ra_content)
-                            try:
-                                action_str = json.loads(ra_content).get("phase2", {}).get("answer", "UNKNOWN")
-                                if action_str in action_space:
-                                    curr_action[j] = action_space.index(action_str)
-                                else:
-                                    curr_action[j] = np.random.randint(0, len(action_space))
-                            except Exception as e:
+            # 4. Make batch request for RA
+            ra_responses = []
+            try:
+                payload = {
+                    "max_tokens": 128,
+                    "requests": [
+                        {
+                            "model": args.model,
+                            "messages": [
+                                {"role": "system", "content": SYSTEM_PROMPT},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.1,
+                            "response_format": {"type": "json_object"}
+                        }
+                        for prompt in ra_prompts
+                    ]
+                }
+                resp = requests.post(f"{args.endpoint}/batch/chat/completions", json=payload, timeout=120)
+                if resp.status_code == 200:
+                    batch_res = resp.json().get("responses", [])
+                    for j, res in enumerate(batch_res):
+                        ra_content = res["choices"][0]["message"]["content"]
+                        ra_responses.append(ra_content)
+                        try:
+                            action_str = json.loads(ra_content).get("phase2", {}).get("answer", "UNKNOWN")
+                            if action_str in action_space:
+                                curr_action[j] = action_space.index(action_str)
+                            else:
                                 curr_action[j] = np.random.randint(0, len(action_space))
-                    else:
-                        print(f"Batch RA failed with status {resp.status_code}: {resp.text}")
-                        for j in range(len(env.list_intersection)):
+                        except Exception as e:
                             curr_action[j] = np.random.randint(0, len(action_space))
-                            ra_responses.append("{}")
-                except Exception as e:
-                    print(f"Batch RA exception at step {i}: {e}")
+                else:
+                    print(f"Batch RA failed with status {resp.status_code}: {resp.text}")
                     for j in range(len(env.list_intersection)):
                         curr_action[j] = np.random.randint(0, len(action_space))
                         ra_responses.append("{}")
+            except Exception as e:
+                print(f"Batch RA exception at step {i}: {e}")
+                for j in range(len(env.list_intersection)):
+                    curr_action[j] = np.random.randint(0, len(action_space))
+                    ra_responses.append("{}")
 
-                for j, inter in enumerate(env.list_intersection):
-                    inter.set_signal(curr_action[j], "set", yellow_time=3, path_to_log=work_dir)
+            for j, inter in enumerate(env.list_intersection):
+                inter.set_signal(curr_action[j], "set", yellow_time=3, path_to_log=work_dir)
 
-                # Log LLM reasoning for this timestep
-                step_log = {}
-                for j, inter in enumerate(env.list_intersection):
-                    step_log[inter.inter_name] = {
-                        "atr_prompt": atr_prompts[j] if j < len(atr_prompts) else "",
-                        "atr_response": atr_texts[j] if j < len(atr_texts) else "",
-                        "ra_prompt": ra_prompts[j] if j < len(ra_prompts) else "",
-                        "ra_response": ra_responses[j] if j < len(ra_responses) else "{}"
-                    }
-                reasoning_logs[str(i)] = step_log
+            # Log LLM reasoning for this timestep
+            step_log = {}
+            for j, inter in enumerate(env.list_intersection):
+                step_log[inter.inter_name] = {
+                    "atr_prompt": atr_prompts[j] if j < len(atr_prompts) else "",
+                    "atr_response": atr_texts[j] if j < len(atr_texts) else "",
+                    "ra_prompt": ra_prompts[j] if j < len(ra_prompts) else "",
+                    "ra_response": ra_responses[j] if j < len(ra_responses) else "{}"
+                }
+            reasoning_logs[str(i * 30)] = step_log
 
     except Exception as e:
         print(f"Simulation error: {e}")
