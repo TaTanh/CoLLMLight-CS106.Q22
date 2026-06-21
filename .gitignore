@@ -108,7 +108,12 @@ test_output/
 
 # Keep standard traffic datasets (needed to run simulations)
 !data/
-data/FinetuneData/
+# Ignore generated FinetuneData subdirs except litepp final results
+data/FinetuneData/llamafactory_litepp_rco/
+data/FinetuneData/llamafactory_litepp_dpo/
+data/FinetuneData/litepp/litepp_rco_raw_100_1.jsonl
+data/FinetuneData/litepp/litepp_rco_rollout_100_1.jsonl
+data/FinetuneData/litepp/litepp_rco_teacher_100_1.jsonl
 data/NewYork/
 
 # Ignore all temporary/sample rollout runs, but KEEP the final eval runs for the Dashboard
