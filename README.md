@@ -4,7 +4,7 @@ A lightweight reimplementation of [CoLLMLight](https://arxiv.org/abs/2503.11739)
 
 ---
 
-## 🚀 Web Dashboard Visualizer (Run This First!)
+## Web Dashboard Visualizer
 
 A premium, interactive web interface (built with vanilla HTML/CSS/JS and PixiJS for 2D graphics) is provided to visualize both the traffic flow and the step-by-step reasoning processes of the LLM student agent.
 
