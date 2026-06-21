@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CoLLMLight Lite++ Web Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Bootstrap & FontAwesome -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    
+    <!-- PixiJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.8.2/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi-viewport@4.2.3/dist/viewport.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="spinner.css">
+    <script src="Point.js"></script>
+</head>
+
+<body class="noselect dark-theme">
+    <!-- Navigation Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-glass border-bottom border-secondary py-2">
+        <div class="container-fluid">
+            <span class="navbar-brand d-flex align-items-center font-weight-bold">
+                <i class="fas fa-traffic-light text-success mr-2 logo-glow"></i>
+                <span class="gradient-text font-weight-extrabold mr-2">CoLLMLight Lite++</span>
+                <span class="badge badge-success text-xs font-weight-semibold">Live Web Demo</span>
+            </span>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto align-items-center">
+                    <li class="nav-item mr-3">
+                        <span class="text-muted text-xs">Model Endpoint:</span>
+                        <span class="badge badge-dark border border-secondary" id="active-endpoint-badge">http://localhost:8000/v1</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="text-muted text-xs">Local Time:</span>
+                        <span class="badge badge-dark border border-secondary" id="local-time">23:28</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <div class="container-fluid py-3 main-container">
+        <div class="row h-100">
+            <!-- LEFT PANEL: Controls & Settings -->
+            <div class="col-lg-3 col-md-3 h-100 d-flex flex-column pr-2 overflow-hidden">
+                <!-- Control Panel (Tabbed Card) -->
+                <div class="card card-glass flex-grow-1 overflow-hidden d-flex flex-column p-3 mb-2">
+                    <!-- Tab Headers -->
+                    <ul class="nav nav-tabs nav-fill mb-3" id="control-tabs" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                        <li class="nav-item">
+                            <a class="nav-link active py-2 text-xs font-weight-bold text-uppercase text-success" id="tab-replay-link" href="#" style="border: none; background: none; transition: color 0.3s;"><i class="fas fa-play mr-1"></i> Replay</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-2 text-xs font-weight-bold text-uppercase text-muted" id="tab-simulate-link" href="#" style="border: none; background: none; transition: color 0.3s;"><i class="fas fa-cogs mr-1"></i> Simulate</a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Contents Container -->
+                    <div class="flex-grow-1 overflow-auto pr-1" id="control-tab-content">
+                        <!-- Tab 1: Replay Player -->
+                        <div id="tab-replay-content">
+                            <!-- Run Selector -->
+                            <div class="form-group mb-4">
+                                <label class="text-muted text-xs font-weight-bold" for="run-selector">Select Replay Run</label>
+                                <select class="form-control custom-select-dark" id="run-selector">
+                                    <option value="" disabled selected>Loading runs...</option>
+                                </select>
+                            </div>
+
+                            <!-- Simulation Stats Summary -->
+                            <h6 class="text-xs text-muted font-weight-bold text-uppercase border-bottom pb-2 mb-2 mt-4">Simulation Metrics</h6>
+                            <div class="row text-center bg-dark-alpha rounded p-3 border border-secondary mb-3 mx-0">
+                                <div class="col-6 border-right border-secondary">
+                                    <div class="text-muted text-xxs">Avg Travel Time (ATT)</div>
+                                    <div class="h3 font-weight-bold text-success mt-1" id="metric-att">--</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-muted text-xxs">Avg Wait Time (AWT)</div>
+                                    <div class="h3 font-weight-bold text-success mt-1" id="metric-awt">--</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Simulation Launcher -->
+                        <div id="tab-simulate-content" class="d-none">
+                            <div class="form-group mb-2">
+                                <label class="text-muted text-xs font-weight-bold" for="sim-dataset">Dataset Grid</label>
+                                <select class="form-control custom-select-dark" id="sim-dataset">
+                                    <option value="synth">Synthetic 4x4 (No GPU required)</option>
+                                    <option value="jinan_3x4">Jinan 3x4 (Real Traffic)</option>
+                                    <option value="hangzhou_4x4">Hangzhou 4x4 (Real Traffic)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mb-2">
+                                <label class="text-muted text-xs font-weight-bold" for="sim-model">Control Policy / Model</label>
+                                <select class="form-control custom-select-dark" id="sim-model">
+                                    <option value="student">Qwen LLM Student (vLLM)</option>
+                                    <option value="MaxPressure">MaxPressure (Baseline)</option>
+                                    <option value="Fixedtime">FixedTime (Baseline)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-2">
+                                <label class="text-muted text-xs font-weight-bold" for="sim-time">Simulation Steps (Seconds)</label>
+                                <input type="number" class="form-control custom-input-dark" id="sim-time" value="300" min="30" max="3600">
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="text-muted text-xs font-weight-bold" for="sim-endpoint">vLLM API Endpoint</label>
+                                <input type="text" class="form-control custom-input-dark" id="sim-endpoint" value="http://localhost:8000/v1">
+                            </div>
+
+                            <button class="btn btn-success btn-block font-weight-bold mb-3" id="btn-run-sim">
+                                <i class="fas fa-play mr-1"></i> Start Simulation
+                            </button>
+
+                            <!-- Simulator Output Logs (Collapsible Console) -->
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="text-muted text-xs font-weight-bold m-0">Console Outputs</label>
+                                    <span class="badge badge-secondary text-xxs font-weight-semibold pulse-dot d-none" id="console-running-badge">Running</span>
+                                </div>
+                                <div class="console-box" id="console-output">
+                                    Offline: Select a run or start a new simulation...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER PANEL: CityFlow Visualizer -->
+            <div class="col-lg-6 col-md-6 h-100 d-flex flex-column px-2 overflow-hidden">
+                <div class="card card-glass flex-grow-1 p-0 overflow-hidden d-flex flex-column relative">
+                    <!-- Loading Spinner Overlay -->
+                    <div id="spinner" class="spinner-overlay d-none">
+                        <div class="spinner-container">
+                            <div class="rect1"></div>
+                            <div class="rect2"></div>
+                            <div class="rect3"></div>
+                            <div class="rect4"></div>
+                            <div class="rect5"></div>
+                            <p class="text-muted mt-3 text-sm">Loading Replay Canvas...</p>
+                        </div>
+                    </div>
+
+                    <!-- Player Canvas Container -->
+                    <div id="simulator-canvas" class="w-100 flex-grow-1">
+                        <!-- Guide instructions (when empty) -->
+                        <div id="guide" class="m-auto p-4 w-75 absolute-center text-center">
+                            <i class="fas fa-traffic-light text-success h1 mb-3 glow-icon"></i>
+                            <h5>Traffic Visualizer Engine</h5>
+                            <p class="text-muted text-sm px-4">
+                                Select a completed evaluation run from the left panel dropdown to load the 2D PixiJS traffic canvas.
+                            </p>
+                            <div class="border border-secondary rounded p-3 bg-dark-alpha text-left mx-auto text-xs" style="max-width: 400px;">
+                                <div class="font-weight-bold text-success mb-1">Navigation Keys:</div>
+                                <div><b class="text-white">P / Space</b>: Pause / Play</div>
+                                <div><b class="text-white">[ / ]</b>: Step backward / Step forward</div>
+                                <div><b class="text-white">Mouse Wheel</b>: Zoom In/Out</div>
+                                <div><b class="text-white">Click & Drag</b>: Pan across map</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Replay Control Bar -->
+                    <div class="bg-glass-dark border-top border-secondary p-3">
+                        <div class="row align-items-center">
+                            <!-- Playback controls -->
+                            <div class="col-md-5 d-flex align-items-center">
+                                <button class="btn btn-outline-light btn-sm mr-2" id="pause" title="Play/Pause">
+                                    <i class="fas fa-play" id="play-pause-icon"></i>
+                                </button>
+                                <div class="d-flex align-items-center text-xs text-muted ml-3">
+                                    <span class="mr-2">Replay Speed:</span>
+                                    <span class="font-weight-bold text-white mr-2" id="replay-speed">0.50</span>
+                                    <input type="range" class="custom-range custom-slider-dark" id="replay-control" min="1" max="100" value="50">
+                                </div>
+                            </div>
+                            
+                            <!-- Timeline Info -->
+                            <div class="col-md-7 text-right">
+                                <span class="badge badge-dark border border-secondary text-xs px-2 py-1 mr-2">
+                                    <i class="fas fa-car mr-1 text-success"></i>Vehicles: <b id="car-num">0</b>
+                                </span>
+                                <span class="badge badge-dark border border-secondary text-xs px-2 py-1 mr-2">
+                                    <i class="fas fa-history mr-1 text-success"></i>Step: <b id="current-step-num">0</b> / <b id="total-step-num">0</b>
+                                </span>
+                                <span class="badge badge-dark border border-secondary text-xs px-2 py-1">
+                                    <i class="fas fa-hourglass-half mr-1 text-success"></i>Progress: <b id="progress-percentage">0.00%</b>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: LLM Reasoning Analysis -->
+            <div class="col-lg-3 col-md-3 h-100 d-flex flex-column pl-2 overflow-hidden">
+                <div class="card card-glass flex-grow-1 overflow-auto p-3 d-flex flex-column">
+                    <h5 class="section-title border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-brain text-success mr-2"></i>LLM Decision Log</span>
+                        <span class="badge badge-secondary text-xxs font-mono" id="intersection-selected-badge">No Selected Intersection</span>
+                    </h5>
+
+                    <!-- Intersection selector dropdown -->
+                    <div class="form-group mb-3">
+                        <label class="text-muted text-xs font-weight-bold" for="inter-log-selector">Active Intersection Node</label>
+                        <select class="form-control custom-select-dark" id="inter-log-selector">
+                            <option value="">(Click map intersection to select)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex-grow-1 overflow-auto" id="reasoning-container">
+                        <!-- Placeholder (Offline state) -->
+                        <div class="text-center text-muted py-5" id="reasoning-placeholder">
+                            <i class="fas fa-microchip h2 mb-3 text-secondary"></i>
+                            <p class="text-xs px-3">
+                                Start simulation or select a run with reasoning logs. During playback, click an intersection to view its step-by-step LLM reasoning.
+                            </p>
+                        </div>
+
+                        <!-- Active Log Card (Shown when logs are loaded) -->
+                        <div class="d-none" id="reasoning-log-details">
+                            
+                            <!-- Phase 1: Complexity Classification -->
+                            <div class="card card-dark-alpha border border-secondary p-2 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-xxs font-weight-bold text-uppercase text-muted">Phase 1: Complexity</span>
+                                    <span class="badge badge-success text-xxs" id="llm-complexity-badge">EASY</span>
+                                </div>
+                                <div class="text-xs italic text-light-gray" id="llm-complexity-reason">
+                                    "Low traffic queues detected on adjacent lanes."
+                                </div>
+                            </div>
+
+                            <!-- Phase 2: Signal Decision -->
+                            <div class="card card-dark-alpha border border-secondary p-2 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-xxs font-weight-bold text-uppercase text-muted">Phase 2: Signal Choice</span>
+                                    <span class="badge badge-success text-xs font-weight-bold font-mono px-2 py-1 shadow-glow" id="llm-choice-badge">ETWT</span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <div class="text-xxs text-muted font-weight-bold">Traffic Analysis:</div>
+                                    <div class="text-xs text-white" id="llm-ra-analysis">--</div>
+                                </div>
+                                <div class="mb-2">
+                                    <div class="text-xxs text-muted font-weight-bold">Future State Summary:</div>
+                                    <div class="text-xs text-white" id="llm-ra-future">--</div>
+                                </div>
+                                <div>
+                                    <div class="text-xxs text-muted font-weight-bold">Signal Comparison:</div>
+                                    <div class="text-xs text-white" id="llm-ra-compare">--</div>
+                                </div>
+                            </div>
+
+                            <!-- Free-form Reasoning (ATR Call) -->
+                            <div class="card card-dark-alpha border border-secondary p-2">
+                                <span class="text-xxs font-weight-bold text-uppercase text-muted d-block mb-1 border-bottom border-secondary pb-1">ATR reasoning text</span>
+                                <div class="text-xs text-white font-mono scrollable-text-box" id="llm-atr-reasoning">
+                                    No reasoning logged.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PixiJS Visualizer Script -->
+    <script src="script.js"></script>
+</body>
+</html>

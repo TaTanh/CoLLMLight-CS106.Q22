@@ -13,7 +13,7 @@ from urllib.parse import urlparse, parse_qs
 
 PORT = 8050
 CO_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.abspath(os.path.join(CO_DIR, "..", "CityFlow", "frontend"))
+FRONTEND_DIR = os.path.join(CO_DIR, "frontend")
 RECORDS_DIR = os.path.join(CO_DIR, "records")
 OUTPUTS_DIR = os.path.join(CO_DIR, "outputs")
 
