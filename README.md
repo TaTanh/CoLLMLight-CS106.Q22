@@ -211,10 +211,10 @@ Output: `llamafactory_litepp_rco/train.json`, `val.json`, `dataset_info.json`.
 
 ### Stage 4 — SFT Training (LLaMA Factory)
 
-Run from the **TaTanh directory** (not from inside LLaMA-Factory). The configs use relative `dataset_dir` paths and `output_dir: saves/...` which resolve correctly from TaTanh root.
+Run from the **project root** (i.e. the cloned `CoLLMLight-CS106.Q22/` directory, not from inside LLaMA-Factory). The configs use relative `dataset_dir` paths and `output_dir: saves/...` which resolve correctly from the project root.
 
 ```bash
-# From the TaTanh directory:
+# From the project root (CoLLMLight-CS106.Q22/):
 
 # Train 1.5B model (~8 GB VRAM)
 llamafactory-cli train config/llamafactory_rco_qwen1_5b.yaml
@@ -272,10 +272,10 @@ Output: `llamafactory_litepp_dpo/dpo_train.json`, `dpo_val.json`, `dataset_info.
 
 ### Stage 6 — DPO Training (LLaMA Factory)
 
-Run from the **TaTanh directory**, same as Stage 4.
+Run from the **project root**, same as Stage 4.
 
 ```bash
-# From the TaTanh directory:
+# From the project root (CoLLMLight-CS106.Q22/):
 
 # Train 1.5B
 llamafactory-cli train config/llamafactory_dpo_qwen1_5b.yaml
@@ -394,33 +394,60 @@ The checker reads the standard pipeline paths:
 ## Project Structure
 
 ```
-TaTanh/
+CoLLMLight-CS106.Q22/
 ├── config/
 │   ├── collmlight_litepp.yaml           # main pipeline config
 │   ├── llamafactory_rco_qwen1_5b.yaml   # Stage 4 SFT config — 1.5B
 │   ├── llamafactory_rco_qwen3b.yaml     # Stage 4 SFT config — 3B
 │   ├── llamafactory_dpo_qwen1_5b.yaml   # Stage 6 DPO config — 1.5B
-│   └── llamafactory_dpo_qwen3b.yaml     # Stage 6 DPO config — 3B
+│   ├── llamafactory_dpo_qwen3b.yaml     # Stage 6 DPO config — 3B
+│   ├── llamafactory_pr_qwen1_5b.yaml    # Stage 6 PR config — 1.5B
+│   └── llamafactory_pr_qwen3b.yaml      # Stage 6 PR config — 3B
 ├── data/
 │   ├── Jinan/3_4/                       # Jinan traffic + roadnet files
 │   ├── Hangzhou/4_4/                    # Hangzhou traffic + roadnet files
 │   ├── Synthetic/4_4/                   # Synthetic traffic + roadnet files
-│   └── FinetuneData/                    # pipeline outputs (generated at runtime)
+│   └── FinetuneData/litepp/             # pipeline data (included in repo)
+│       ├── litepp_rco_raw_1.jsonl       # Stage 1 output
+│       ├── litepp_rco_rollout_1.jsonl   # Stage 2a output
+│       ├── litepp_rco_teacher_1.jsonl   # Stage 2b output
+│       └── litepp_dpo_pairs_100_1.jsonl # Stage 5a output
 ├── scripts/
 │   ├── sample_litepp_cityflow.py        # Stage 1: sampling + inline rollout
 │   ├── rollout_label_litepp.py          # Stage 2a: complexity labeling
 │   ├── teacher_rewrite_litepp.py        # Stage 2b: ATR+RA teacher calls
-│   ├── export_llamafactory_litepp.py    # Stage 3 (SFT export)
+│   ├── export_llamafactory_litepp.py    # Stage 3: SFT export
+│   ├── build_refinement_litepp.py       # Stage 5a helper
 │   ├── refinement_litepp.py             # Stage 5a: DPO pair collection
 │   ├── export_dpo_litepp.py             # Stage 5b: DPO export
 │   ├── evaluate_litepp_student.py       # Stage 7: live evaluation
+│   ├── run_baselines_to_csv.py          # baseline comparison runner
+│   ├── serve_student_gpu.py             # vLLM serving helper
+│   ├── download_qwen.py                 # model download utility
 │   └── check_e2e.py                     # format verification
 ├── utils/
 │   ├── cityflow_env.py                  # CityFlow environment wrapper
 │   ├── litepp_complexity.py             # binary complexity classifier
-│   └── config.py                        # environment defaults
-├── outputs/                             # evaluation CSVs (generated)
-├── saves/                               # LoRA checkpoints (generated)
+│   ├── config.py                        # environment defaults
+│   ├── LLMs.py                          # LLM API client
+│   ├── prompts.py                       # prompt templates
+│   ├── pipeline.py                      # pipeline orchestration
+│   ├── generator.py                     # data generation helpers
+│   ├── construct_sample.py              # sample construction
+│   ├── updater.py                       # model updater
+│   └── my_utils.py / utils.py           # general utilities
+├── records/
+│   ├── litepp_eval_jinan_3x4/           # Jinan evaluation replay logs
+│   └── litepp_eval_hangzhou_4x4/        # Hangzhou evaluation replay logs
+├── qwen_lora_rco/
+│   └── LLaMA-Factory/saves/
+│       └── Qwen2.5-1.5B-RCO-LoRA/      # pre-trained RCO LoRA adapter (~37MB)
+├── outputs/
+│   └── litepp_eval_results.csv          # evaluation results (ATT/AWT)
+├── saves/                               # LoRA checkpoints saved during training
+├── notebook/
+│   └── rco-1.ipynb                      # exploratory analysis notebook
+├── dashboard_server.py                  # web visualizer server (port 8050)
 ├── requirements.txt
 └── README.md
 ```
