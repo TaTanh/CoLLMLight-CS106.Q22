@@ -1,0 +1,8 @@
+{
+  "litepp_train": {
+    "file_name": "train.json"
+  },
+  "litepp_val": {
+    "file_name": "val.json"
+  }
+}
