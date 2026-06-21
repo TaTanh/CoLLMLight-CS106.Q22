@@ -2,6 +2,31 @@
 
 A lightweight reimplementation of [CoLLMLight](https://arxiv.org/abs/2503.11739) — cooperative LLM-based traffic signal control — designed to run on a single consumer GPU using an external AI API for teacher generation and small local models (Qwen2.5-1.5B or 3B) for inference.
 
+---
+
+## 🚀 Web Dashboard Visualizer (Run This First!)
+
+A premium, interactive web interface (built with vanilla HTML/CSS/JS and PixiJS for 2D graphics) is provided to visualize both the traffic flow and the step-by-step reasoning processes of the LLM student agent.
+
+### How to Start the Dashboard:
+```bash
+python3 dashboard_server.py
+```
+This launches a lightweight HTTP server on port **8050**.
+
+### How to Use the Visualizer:
+1. Open your browser and navigate to `http://localhost:8050`.
+2. In the **Replay** tab (left panel), select one of the completed runs from the dropdown:
+   - **Jinan 3x4 (with LLM logs)** or **Hangzhou 4x4 (with LLM logs)**.
+3. Click the **Play** button at the bottom center to start the 2D car simulation. You can adjust the playback speed or drag/zoom the map.
+4. **Inspect LLM Decision Logs:** Click on any active intersection node on the map (or select it from the dropdown on the right panel). As the timer plays, you will see the LLM's live multi-phase reasoning updated every 30 seconds:
+   - **Phase 1 (Complexity):** Traffic complexity classification (`EASY`/`COMPLEX`) with rationale.
+   - **Phase 2 (Signal Choice):** The chosen phase (e.g., `ETWT`) and detailed reasoning (traffic analysis, future state prediction, and signal comparison).
+   - **ATR Reasoning Text:** Full natural language traffic analysis written by the LLM.
+5. In the **Simulate** tab, you can configure parameters (dataset, model, time limit, and LLM endpoint) and launch new simulation evaluations directly from the GUI.
+
+---
+
 ## What This Does
 
 CoLLMLight Lite++ trains a local student model in two phases:
@@ -307,29 +332,6 @@ python scripts/evaluate_litepp_student.py \
 ```
 
 Results appended to CSV with columns: `dataset`, `model`, `ATT` (Average Travel Time, seconds), `AWT` (Average Wait Time, seconds), `n_vehicles`. Lower ATT and AWT are better.
-
----
-
-### Web Dashboard Visualizer
-
-A premium, interactive web interface (built with vanilla HTML/CSS/JS and PixiJS for 2D graphics) is provided to visualize both the traffic flow and the step-by-step reasoning processes of the LLM student agent.
-
-#### How to Start the Dashboard:
-```bash
-python3 dashboard_server.py
-```
-This launches a lightweight HTTP server on port **8050**.
-
-#### How to Use the Visualizer:
-1. Open your browser and navigate to `http://localhost:8050`.
-2. In the **Replay** tab (left panel), select one of the completed runs from the dropdown:
-   - **Jinan 3x4 (with LLM logs)** or **Hangzhou 4x4 (with LLM logs)**.
-3. Click the **Play** button at the bottom center to start the 2D car simulation. You can adjust the playback speed or drag/zoom the map.
-4. **Inspect LLM Decision Logs:** Click on any active intersection node on the map (or select it from the dropdown on the right panel). As the timer plays, you will see the LLM's live multi-phase reasoning updated every 30 seconds:
-   - **Phase 1 (Complexity):** Traffic complexity classification (`EASY`/`COMPLEX`) with rationale.
-   - **Phase 2 (Signal Choice):** The chosen phase (e.g., `ETWT`) and detailed reasoning (traffic analysis, future state prediction, and signal comparison).
-   - **ATR Reasoning Text:** Full natural language traffic analysis written by the LLM.
-5. In the **Simulate** tab, you can configure parameters (dataset, model, time limit, and LLM endpoint) and launch new simulation evaluations directly from the GUI.
 
 ---
 
